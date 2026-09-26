@@ -6,10 +6,10 @@ const {
     createGoal,
     updateGoal,
     deleteGoal
-} = require('../controllers/goalcontroller');
+} = require('../controllers/goalController');
 
 const router = express.Router();
-
+    
 router.get('/', getGoals);
 
 router.get('/:id', getGoalById);
