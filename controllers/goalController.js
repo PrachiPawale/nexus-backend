@@ -1,17 +1,33 @@
 const db = require('../config/db');
 
 // Get all goals
+// Get all goals for a specific user
 const getGoals = async (req, res) => {
     try {
+        const { user_id } = req.query;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id is required"
+            });
+        }
+
         const result = await db.query(
-            'SELECT * FROM goals ORDER BY created_at DESC'
+            'SELECT * FROM goals WHERE user_id = $1 ORDER BY created_at DESC',
+            [user_id]
         );
 
-        res.status(200).json(result.rows);
+        res.status(200).json({
+            success: true,
+            goals: result.rows
+        });
+
     } catch (error) {
         console.error('Get goals error:', error);
 
         res.status(500).json({
+            success: false,
             message: 'Failed to fetch goals'
         });
     }

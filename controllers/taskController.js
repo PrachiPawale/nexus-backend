@@ -3,42 +3,68 @@ const db = require('../config/db');
 // Get all tasks
 const getTasks = async (req, res) => {
     try {
+        const { user_id } = req.query;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id is required"
+            });
+        }
+
         const result = await db.query(
-            'SELECT * FROM tasks ORDER BY created_at DESC'
+            "SELECT * FROM tasks WHERE user_id = $1 ORDER BY id DESC",
+            [user_id]
         );
 
-        res.status(200).json(result.rows);
+        res.status(200).json({
+            success: true,
+            tasks: result.rows
+        });
+
     } catch (error) {
-        console.error('Get tasks error:', error);
+        console.error("Get Tasks Error:", error);
 
         res.status(500).json({
-            message: 'Failed to fetch tasks'
+            success: false,
+            message: "Failed to fetch tasks"
         });
     }
 };
 
 
-// Get task by ID
+// Get a specific task belonging to a user
 const getTaskById = async (req, res) => {
     try {
         const { id } = req.params;
+        const { user_id } = req.query;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id is required"
+            });
+        }
 
         const result = await db.query(
-            'SELECT * FROM tasks WHERE id = $1',
-            [id]
+            'SELECT * FROM tasks WHERE id = $1 AND user_id = $2',
+            [id, user_id]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({
+                success: false,
                 message: 'Task not found'
             });
         }
 
         res.status(200).json(result.rows[0]);
+
     } catch (error) {
         console.error('Get task error:', error);
 
         res.status(500).json({
+            success: false,
             message: 'Failed to fetch task'
         });
     }
@@ -84,7 +110,7 @@ const createTask = async (req, res) => {
 };
 
 
-// Update task
+// Update a user's own task
 const updateTask = async (req, res) => {
     try {
         const { id } = req.params;
@@ -94,8 +120,16 @@ const updateTask = async (req, res) => {
             description,
             status,
             priority,
-            due_date
+            due_date,
+            user_id
         } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id is required"
+            });
+        }
 
         const result = await db.query(
             `UPDATE tasks
@@ -104,7 +138,7 @@ const updateTask = async (req, res) => {
                  status = $3,
                  priority = $4,
                  due_date = $5
-             WHERE id = $6
+             WHERE id = $6 AND user_id = $7
              RETURNING *`,
             [
                 title,
@@ -112,13 +146,15 @@ const updateTask = async (req, res) => {
                 status,
                 priority,
                 due_date || null,
-                id
+                id,
+                user_id
             ]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({
-                message: 'Task not found'
+                success: false,
+                message: 'Task not found or unauthorized'
             });
         }
 
@@ -128,29 +164,40 @@ const updateTask = async (req, res) => {
         console.error('Update task error:', error);
 
         res.status(500).json({
+            success: false,
             message: 'Failed to update task'
         });
     }
 };
 
 
-// Delete task
+/// Delete a user's own task
 const deleteTask = async (req, res) => {
     try {
         const { id } = req.params;
+        const { user_id } = req.query;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id is required"
+            });
+        }
 
         const result = await db.query(
-            'DELETE FROM tasks WHERE id = $1 RETURNING *',
-            [id]
+            'DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *',
+            [id, user_id]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({
-                message: 'Task not found'
+                success: false,
+                message: 'Task not found or unauthorized'
             });
         }
 
         res.status(200).json({
+            success: true,
             message: 'Task deleted successfully'
         });
 
@@ -158,6 +205,7 @@ const deleteTask = async (req, res) => {
         console.error('Delete task error:', error);
 
         res.status(500).json({
+            success: false,
             message: 'Failed to delete task'
         });
     }

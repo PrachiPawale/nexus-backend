@@ -1,19 +1,36 @@
 const db = require('../config/db');
 
 // Get all calendar events
+// Get all calendar events for a specific user
 const getEvents = async (req, res) => {
     try {
+        const { user_id } = req.query;
+
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id is required"
+            });
+        }
+
         const result = await db.query(
             `SELECT *
              FROM calendar_events
-             ORDER BY start_time ASC`
+             WHERE user_id = $1
+             ORDER BY start_time ASC`,
+            [user_id]
         );
 
-        res.status(200).json(result.rows);
+        res.status(200).json({
+            success: true,
+            events: result.rows
+        });
+
     } catch (error) {
         console.error('Get calendar events error:', error);
 
         res.status(500).json({
+            success: false,
             message: 'Failed to fetch calendar events'
         });
     }
