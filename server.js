@@ -18,6 +18,8 @@ app.use("/api/goals", require("./routes/goalRoutes"));
 app.use("/api/calendar", require("./routes/calendarRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
+app.use("/api/jarvis", require("./routes/jarvisRoutes"));
+
 
 // Root route
 app.get("/", (req, res) => {
